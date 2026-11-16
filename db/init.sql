@@ -6,6 +6,6 @@ CREATE TABLE IF NOT EXISTS tasks (
 );
 
 INSERT INTO tasks (title, completed) VALUES
-("Set up the database", TRUE),
-("Build the PHP API", TRUE),
-("Create the React frontend", FALSE);
+('Set up the database', TRUE),
+('Build the PHP API', TRUE),
+('Create the React frontend', FALSE);
