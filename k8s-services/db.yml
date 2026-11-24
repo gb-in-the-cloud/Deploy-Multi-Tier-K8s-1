@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: myapp
+spec: 
+  serviceName: postgres-service
+  replicas: 1
+  selector: 
+   matchLabels:
+     app: postgres
+  template:
+   metadata:
+     labels:
+       app: postgres
+   spec:
+     containers:
+     - name: postgres
+       image: postgres:16-alpine
+       env:
+       - name: POSTGRES_DB
+         value: myapp
+       - name: POSTGRES_USER
+         value: admin
+       - name: POSTGRES_PASSWORD
+         valueFrom:
+           secretKeyRef:
+             name: db-secret
+             key: password
+       - name: PGDATA
+         value: /var/lib/postgresql/data/pgdata
+       ports:
+       - containerPort: 5432
+       volumeMounts: 
+          - name: postgres-storage
+            mountPath: /var/lib/postgresql/data
+       readinessProbe:
+         exec:
+           command: ["pg_isready", "-U", "admin", "-d", "myapp"]
+         initialDelaySeconds: 5
+         periodSeconds: 10
+       livenessProbe: 
+          exec:
+            command: ["pg_isready", "-U", "admin", "-d", "myapp"]
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          failureThreshold: 3
+       resources:
+         requests:
+           cpu: "100m"
+           memory: "128Mi"
+         limits:
+           cpu: "500m"
+           memory: "256Mi"
+  volumeClaimTemplates:
+      - metadata:
+          name: postgres-storage
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata: 
+  name: postgres-service
+  namespace: myapp
+spec:
+  clusterIP: None
+  selector:
+     app: postgres
+  ports: 
+  - port: 5432
+    targetPort: 5432
